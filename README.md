@@ -1,3 +1,3 @@
 # portal-forecasting-models
 Repo for connecting with Portal forecasting model doc in Overleaf.  
-*Note: if you edit on Overleaf, do a* `pull` *and a* `push` *via your local command line.*  
+*Note: If you edit on Overleaf, you'll need to do a manual bridge (fetch-merge-push) to GitHub. If you update the file on GitHub, it automatically bridges to Overleaf*  
