@@ -1,4 +1,3 @@
 # portal-forecasting-models
 Repository for connecting with the [Portal forecasting model doc on Overleaf](https://www.overleaf.com/12556055dvthwndmdmrm).  
-*Note: Overleaf's Git bridge is not perfect yet.  
-So, once you're done editing you'll need to do a manual bridge (pull-push)*.
+*Note: Overleaf's Git bridge is not perfect yet. You need to set up the bridge in general via remotes for your local repo.  Once you're done with an editing session (in Overleaf or in GitHub), you'll need to do a manual bridge (pull-push) [Video instructions here](https://www.youtube.com/watch?v=6OqFEfH7lBY)*.
