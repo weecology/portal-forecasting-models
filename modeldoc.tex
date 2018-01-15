@@ -2,6 +2,8 @@
 
 \usepackage[english]{babel}
 \usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[autostyle]{csquotes}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage[colorinlistoftodos]{todonotes}
@@ -19,6 +21,9 @@
     urlcolor = black,
     citecolor = black,
 }
+\usepackage{natbib}
+\bibliographystyle{abbrvnat}
+\setcitestyle{authoryear,open={(},close={)}}
 
 \title{Portal Forecasting Models}
 
@@ -36,7 +41,7 @@
 \section*{Overview}
 \label{sec:overview}
 
-This document describes the models used to forecast ecological predictions for the Portal Project \cite{portal, portalpredictions}. 
+This document describes the models used to forecast ecological predictions for the Portal Project \citep{Brown1998, PortalPredictions}. 
 
 \section{Current Models}
 \label{sec:currmods}
@@ -44,36 +49,36 @@ This document describes the models used to forecast ecological predictions for t
 \subsection{Na\"{i}ve 1}
 \label{subsec:naive01}
 
-"Na\"{i}ve 1" is a flexible exponential smoothing state space (ESSS) model \cite{esssbook} fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{ets} and \code{forecast} functions in the \textbf{forecast} package \cite{forecast} with the \code{allow.multiplicative.trend} argument set to \code{TRUE} and the \code{naive01} function in our \textbf{portalPredictions} package \cite{portalpredictions}. ESSS models fit using \code{ets} implement what is known as the "innovations" approach to state space modeling, which assumes a single source of noise that is equivalent for the process and observation errors.
+"Na\"{i}ve 1" is a flexible exponential smoothing state space (ESSS) model \citep{Hyndman2008} fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{ets} and \code{forecast} functions in the \textbf{forecast} package \citep{Hyndman2017} with the \code{allow.multiplicative.trend} argument set to \code{TRUE} and the \code{naive01} function in our \textbf{portalPredictions} package \citep{PortalPredictions}. ESSS models fit using \code{ets} implement what is known as the "innovations" approach to state space modeling, which assumes a single source of noise that is equivalent for the process and observation errors \citep{Hyndman2008}.
 
-ESSS models are defined according to three model structure parameters: error type, trend type, and seasonality type \cite{esssbook}. Each of the parameters can be an N (none), A (additive), or M (multiplicative) state \cite{esssbook}. "Na\"{i}ve 1" is fit flexibly, such that the model parameters can vary from fit to fit.
+ESSS models are defined according to three model structure parameters: error type, trend type, and seasonality type \citep{Hyndman2008}. Each of the parameters can be an N (none), A (additive), or M (multiplicative) state \citep{Hyndman2008}. "Na\"{i}ve 1" is fit flexibly, such that the model parameters can vary from fit to fit.
 
 \subsection{Na\"{i}ve 2}
 \label{subsec:naive02}
 
-"Na\"{i}ve 2" is a flexible Auto-Regressive Integrated Moving Average (ARIMA) model fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{auto.arima} (with the \code{lambda} argument set to 0) and \code{forecast} functions in the \textbf{forecast} package \cite{forecast} \cite{forecastingbook} and the \code{naive02} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
+"Na\"{i}ve 2" is a flexible Auto-Regressive Integrated Moving Average (ARIMA) model fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{auto.arima} (with the \code{lambda} argument set to 0) and \code{forecast} functions in the \textbf{forecast} package \citep{Hyndman2013, Hyndman2017} and the \code{naive02} function in our \textbf{portalPredictions} package \citep{PortalPredictions}.
 
-ARIMA models are defined according to three model structure parameters: the number of autoregressive terms (p), the degree of differencing (d), and the order of the moving average (q), and are represented as ARIMA(p, q, q) \cite{boxjenkins}. "Na\"{i}ve 2" is fit flexibly, such that the model parameters can vary from fit to fit.
+ARIMA models are defined according to three model structure parameters: the number of autoregressive terms (p), the degree of differencing (d), and the order of the moving average (q), and are represented as ARIMA(p, q, q) \citep{Box1970}. "Na\"{i}ve 2" is fit flexibly, such that the model parameters can vary from fit to fit.
 
 \subsection{Negative Binomial TS}
 \label{subsec:neg_binom_ts}
 
-"Negative Binomial TS" (NBTS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model with overdispersion fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \cite{tscount} and the \code{neg\_binom\_ts} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
+"Negative Binomial TS" (NBTS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model with overdispersion fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \citep{Liboschik2017a} and the \code{neg\_binom\_ts} function in our \textbf{portalPredictions} package \citep{PortalPredictions}.
 
-GARCH models are generalized ARMA models and are defined according to their link function, response distribution, and two model structure parameters: the number of autoregressive terms (p) and the order of the moving average (q), and are represented as GARCH(p, q) \cite{tscount}. The NBTS model is fit using the log link and a negative binomial response (modeled as an over-dispersed Poisson), as well as with p = 1 (first-order autoregression) and q = 12 (yearly moving average).
+GARCH models are generalized ARMA models and are defined according to their link function, response distribution, and two model structure parameters: the number of autoregressive terms (p) and the order of the moving average (q), and are represented as GARCH(p, q) \citep{Liboschik2017a}. The NBTS model is fit using the log link and a negative binomial response (modeled as an over-dispersed Poisson), as well as with p = 1 (first-order autoregression) and q = 12 (yearly moving average).
 
-The \code{tsglm} function in the \textbf{tscount} package \cite{tscount} uses a (conditional) quasi-likelihood based approach to inference and models the overdispersion as an additional parameter in a two-step approach. This two-stage approach has only been minimally evaluated, although preliminary simulation-based studies are promising \cite{tsglmvignette}.    
+The \code{tsglm} function in the \textbf{tscount} package \citep{Liboschik2017a} uses a (conditional) quasi-likelihood based approach to inference and models the overdispersion as an additional parameter in a two-step approach. This two-stage approach has only been minimally evaluated, although preliminary simulation-based studies are promising \citep{Liboschik2017b}.    
 
 Species are fit individually and then summed to produce a composite estimate. 
 
 \subsection{Poisson Environmental TS}
 \label{subsec:pois_env_ts}
 
-"Poisson Environmental TS" (PETS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \cite{tscount} and the \code{pois\_env\_ts} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
+"Poisson Environmental TS" (PETS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \citep{Liboschik2017a} and the \code{pois\_env\_ts} function in our \textbf{portalPredictions} package \citep{PortalPredictions}.
 
-GARCH models are generalized ARMA models and are defined according to their link function, response distribution, and two model structure parameters: the number of autoregressive terms (p) and the order of the moving average (q), and are represented as GARCH(p, q) \cite{tscount}. The PETS model is fit using the log link and a Poisson response, as well as with p = 1 (first-order autoregression) and q = 12 (yearly moving average). The environmental variables potentially includes in the model are min, mean, and max temperatures, precipiation, and NDVI. 
+GARCH models are generalized ARMA models and are defined according to their link function, response distribution, and two model structure parameters: the number of autoregressive terms (p) and the order of the moving average (q), and are represented as GARCH(p, q) \citep{Liboschik2017a}. The PETS model is fit using the log link and a Poisson response, as well as with p = 1 (first-order autoregression) and q = 12 (yearly moving average). The environmental variables potentially includes in the model are min, mean, and max temperatures, precipiation, and NDVI. 
 
-The \code{tsglm} function in the \textbf{tscount} package \cite{tscount} uses a (conditional) quasi-likelihood based approach to inference. This approach has only been minimally evaluated for models with covariates, although preliminary simulation-based studies are promising \cite{tsglmvignette}.  
+The \code{tsglm} function in the \textbf{tscount} package \citep{Liboschik2017a} uses a (conditional) quasi-likelihood based approach to inference. This approach has only been minimally evaluated for models with covariates, although preliminary simulation-based studies are promising \citep{Liboschik2017b}.  
 
 Each species is fit using the following (nonexhaustive) sets of the environmental covariates:
 \begin{itemize}
@@ -97,7 +102,7 @@ Currently, there is no intercept-only model included. The single best model of t
 \subsection{General Framework}
 \label{subsec:devmods_gf}
 
-The approach I propose here is based on dynamical state-space models (a.k.a. partially observed Markov process models), whereby the observed data are considered a partial sample of a "true" state, which evolves through time. We use a variety of models to make inference about the state of the system through time and then use these same models to produce our forecast of expected future observations. 
+The framework I propose here is based on a data-assimilation approach to forecasting using dynamical state-space models (a.k.a. partially observed Markov process models), whereby the observed data are considered a partial sample of a "true" state that evolves through time \citep{Ionides2006, King2016}, and the models used to estimate and forecast the true state are iteratively evaluated and updated with each new observation. We use a suite of competing models to make inference about the historic and current state of the system and to produce forecasts of expected future observations. Ongoing data collections provide new observations, which are used to iteratively evaluate the models and produce new predictions via the forecast cycle \citep{Dietze2017}. 
 
 We use $y$ to represent an observation and $y_{ijk}$ is the observed number of rodents of species $i$ in plot $j$ at survey $k$. Because $y_{ijk}$ is a count of individuals, the variable is non-negative and integer-valued. The observed numbers of individuals across each species $i$ in $1 \ldots I$ and each plot $j$ in $1 \ldots J$ for a given survey $k$ is an $I \times J$ matrix $\textbf{Y}_k$. The series of observations for surveys $1 \ldots K$ is given by $\textbf{Y}_{1:K}$. We use $\textbf{Y}_{1:K}$ to evaluate all possible models ($m$ in $1 \ldots M$ total models). The total likelihood ($\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K})$) of a given model $m$ is the data-based measure of support for that model $\mathcal{M}_m$ and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
 
@@ -130,26 +135,5 @@ z_{ijk = 0} = f_{z_0}({\theta_{z_0}}_i)
 \end{equation}
 
 
-
-\addcontentsline{toc}{section}{References}
-\begin{thebibliography}{9}
-\bibitem{boxjenkins}
-Box, G. and G. Jenkins. 1970. \textit{Time series analysis: forecasting and control}. Holden-Day. San Francisco, USA. 
-\bibitem{esssbook}
-Hyndman, R. J., A. B. Koehler, J. K. Ord, and R. D. Snyder. 2008. \textit{Forecasting with exponential smoothing: the state space approach}. Springer-Verlag. New York, USA.
-\bibitem{forecast}
-  Hyndman, R. J. and G. Athanasopoulos 2013. textit{Forecasting: principles and practice}. OTexts. Melbourne, Australia.
-\bibitem{forecastingbook}
-  Hyndman, R. J. 2017. \textbf{forecast}: Forecasting functions for time series and linear models. R package version 8.2, \url{http://pkg.robjhyndman.com/forecast}
-\bibitem{portal}
-  \url{http://portal.weecology.org/}
-\bibitem{portalpredictions}
-  \url{https://github.com/weecology/portalPredictions}
-\bibitem{tscount}
-Liboschik, T., R. Fried, K. Fokianos, and P. Probst. 2017. tscount: Analysis of Count Time Series. R package
-  version 1.4.0. \url{https://CRAN.R-project.org/package=tscount}
-\bibitem{tsglmvignette}
-Liboschik T., K. Fokianos, and R. Fried. 2016. tscount: An R package for analysis of count time series following generalized linear models.
-\textit{Journal of Statistical Software}.
-\end{thebibliography}
+\bibliography{refs}  
 \end{document}
