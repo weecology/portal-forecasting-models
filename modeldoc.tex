@@ -10,6 +10,7 @@
 \usepackage{authblk}
 \usepackage{hyperref}
 \usepackage{indentfirst}
+\usepackage{bbold}
 \def\code#1{\texttt{#1}}
 \hypersetup{
     colorlinks = true,
@@ -37,22 +38,25 @@
 
 This document describes the models used to forecast ecological predictions for the Portal Project \cite{portal, portalpredictions}. 
 
-\section{Na\"{i}ve 1}
-\label{sec:naive01}
+\section{Current Models}
+\label{sec:currmods}
 
-"Na\"{i}ve 1" is a flexible exponential smoothing state space (ESSS) model \cite{esssbook} fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{ets} and \code{forecast} functions in the \textbf{forecast} package \cite{forecast} with the \code{allow.multiplicative.trend} argument set to \code{TRUE} and the \code{naive01} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
+\subsection{Na\"{i}ve 1}
+\label{subsec:naive01}
+
+"Na\"{i}ve 1" is a flexible exponential smoothing state space (ESSS) model \cite{esssbook} fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{ets} and \code{forecast} functions in the \textbf{forecast} package \cite{forecast} with the \code{allow.multiplicative.trend} argument set to \code{TRUE} and the \code{naive01} function in our \textbf{portalPredictions} package \cite{portalpredictions}. ESSS models fit using \code{ets} implement what is known as the "innovations" approach to state space modeling, which assumes a single source of noise that is equivalent for the process and observation errors.
 
 ESSS models are defined according to three model structure parameters: error type, trend type, and seasonality type \cite{esssbook}. Each of the parameters can be an N (none), A (additive), or M (multiplicative) state \cite{esssbook}. "Na\"{i}ve 1" is fit flexibly, such that the model parameters can vary from fit to fit.
 
-\section{Na\"{i}ve 2}
-\label{sec:naive02}
+\subsection{Na\"{i}ve 2}
+\label{subsec:naive02}
 
 "Na\"{i}ve 2" is a flexible Auto-Regressive Integrated Moving Average (ARIMA) model fit to the data at the composite (site) spatial level and the composite (community) ecological level. The model is selected and fitted using the \code{auto.arima} (with the \code{lambda} argument set to 0) and \code{forecast} functions in the \textbf{forecast} package \cite{forecast} \cite{forecastingbook} and the \code{naive02} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
 
 ARIMA models are defined according to three model structure parameters: the number of autoregressive terms (p), the degree of differencing (d), and the order of the moving average (q), and are represented as ARIMA(p, q, q) \cite{boxjenkins}. "Na\"{i}ve 2" is fit flexibly, such that the model parameters can vary from fit to fit.
 
-\section{Negative Binomial TS}
-\label{sec:neg_binom_ts}
+\subsection{Negative Binomial TS}
+\label{subsec:neg_binom_ts}
 
 "Negative Binomial TS" (NBTS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model with overdispersion fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \cite{tscount} and the \code{neg\_binom\_ts} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
 
@@ -62,8 +66,8 @@ The \code{tsglm} function in the \textbf{tscount} package \cite{tscount} uses a 
 
 Species are fit individually and then summed to produce a composite estimate. 
 
-\section{Poisson Environmental TS}
-\label{sec:pois_env_ts}
+\subsection{Poisson Environmental TS}
+\label{subsec:pois_env_ts}
 
 "Poisson Environmental TS" (PETS) is a generalized autoregressive conditional heteroskedasticity (GARCH) model fit to the data at the composite (site) spatial level and the articulated (species) ecological level. The model for each species is selected and fitted using the \code{tsglm} function in the \textbf{tscount} package \cite{tscount} and the \code{pois\_env\_ts} function in our \textbf{portalPredictions} package \cite{portalpredictions}.
 
@@ -86,6 +90,46 @@ Each species is fit using the following (nonexhaustive) sets of the environmenta
 \end{itemize}
 
 Currently, there is no intercept-only model included. The single best model of the 10 is selected based on AIC. Species are fit individually and then summed to produce a composite estimate. 
+
+\section{Developing Models}
+\label{sec:devmods}
+
+\subsection{General Framework}
+\label{subsec:devmods_gf}
+
+The approach I propose here is based on dynamical state-space models (a.k.a. partially observed Markov process models), whereby the observed data are considered a partial sample of a "true" state, which evolves through time. We use a variety of models to make inference about the state of the system through time and then use these same models to produce our forecast of expected future observations. 
+
+We use $y$ to represent an observation and $y_{ijk}$ is the observed number of rodents of species $i$ in plot $j$ at survey $k$. Because $y_{ijk}$ is a count of individuals, the variable is non-negative and integer-valued. The observed numbers of individuals across each species $i$ in $1 \ldots I$ and each plot $j$ in $1 \ldots J$ for a given survey $k$ is an $I \times J$ matrix $\textbf{Y}_k$. The series of observations for surveys $1 \ldots K$ is given by $\textbf{Y}_{1:K}$. We use $\textbf{Y}_{1:K}$ to evaluate all possible models ($m$ in $1 \ldots M$ total models). The total likelihood ($\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K})$) of a given model $m$ is the data-based measure of support for that model $\mathcal{M}_m$ and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
+
+\begin{equation}
+\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K}) = \prod_{k = 1}^{K}{\mathcal{L}(\mathcal{M}_m, \textbf{Y}_{1:k-1}|\textbf{Y}_{k})},
+\end{equation}
+
+which is equal to the product of the probabilities of each observation, given the model and the history of observations to that point:
+
+\begin{equation}
+\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K}) = \prod_{k = 1}^{K}{\mathbb{P}[\textbf{Y}_{k}|\mathcal{M}_m, \textbf{Y}_{1:k-1}]}
+\end{equation}
+
+Each model is defined by three functions that describe the evolution of the underlying state and the data collected on it. $y_{ijk}$ is a function of $z_{ijk}$, the true state (number or density) of $i$ in $j$ at $k$, and some species-specific detection-function parameters ${\theta_{y}}_i$:
+
+\begin{equation}
+y_{ijk} = f_y(z_{ijk}, {\theta_{y}}_i)
+\end{equation}
+
+$f_y$ is a general observation function that could take multiple forms, but must make predictions of $y_{ijk}$ as non-negative integers. The unobserved true state of species $i$ in $j$ at $k$ ($z_{ijk}$) is an evolving, non-negative variable that could be integer-valued (if the state is represented by the number of individuals) or continuous (if the state is represented by the density of individuals). In either case, we can considering a general process model $f_z$ that describes the evolution of $z_{ijk}$:
+
+\begin{equation}
+z_{ijk} = f_z({z_{ijk - \Delta t}}, \Delta t, {{\theta_z}}_i)
+\end{equation}
+
+where $\Delta t$ is the time step and ${\theta_{z}}_i$ are some species-specific process-function parameters. $f_z$ is general; it can be phenomenological or mechanistic, but it must generate appropriate values for $z_{ijk}$. Given the evolutionary aspect of the model, we must define a starting point for $z_{ijk}$. To do so, we use the general initialization function $f_{z_0}$, which only depends upon species-specific parameters ${\theta_{z_0}}_i$:
+
+\begin{equation}
+z_{ijk = 0} = f_{z_0}({\theta_{z_0}}_i)
+\end{equation}
+
+
 
 \addcontentsline{toc}{section}{References}
 \begin{thebibliography}{9}
