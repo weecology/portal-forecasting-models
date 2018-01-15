@@ -99,12 +99,32 @@ Currently, there is no intercept-only model included. The single best model of t
 \section{Developing Models}
 \label{sec:devmods}
 
-\subsection{General Framework}
+\subsection{General Framework and Notation}
 \label{subsec:devmods_gf}
 
-The framework I propose here is based on a data-assimilation approach to forecasting using dynamical state-space models (a.k.a. partially observed Markov process models), whereby the observed data are considered a partial sample of a "true" state that evolves through time \citep{Ionides2006, King2016}, and the models used to estimate and forecast the true state are iteratively evaluated and updated with each new observation. We use a suite of competing models to make inference about the historic and current state of the system and to produce forecasts of expected future observations. Ongoing data collections provide new observations, which are used to iteratively evaluate the models and produce new predictions via the forecast cycle \citep{Dietze2017}. 
+The framework I propose here is based on a data-assimilation approach to forecasting using dynamical state-space models (a.k.a. partially observed Markov process models), where the observed data are considered a partial sample of an underlying true state that evolves through time \citep{Ionides2006, King2016} and the models used to estimate and forecast the true state are iteratively evaluated and updated with each new observation. We use a suite of competing models to make inference about the historic and current state of the system and to produce forecasts of expected future observations. Ongoing data collections provide new observations, which are used to iteratively evaluate the models and produce new predictions via the forecast cycle \citep{Dietze2017}. 
 
-We use $y$ to represent an observation and $y_{ijk}$ is the observed number of rodents of species $i$ in plot $j$ at survey $k$. Because $y_{ijk}$ is a count of individuals, the variable is non-negative and integer-valued. The observed numbers of individuals across each species $i$ in $1 \ldots I$ and each plot $j$ in $1 \ldots J$ for a given survey $k$ is an $I \times J$ matrix $\textbf{Y}_k$. The series of observations for surveys $1 \ldots K$ is given by $\textbf{Y}_{1:K}$. We use $\textbf{Y}_{1:K}$ to evaluate all possible models ($m$ in $1 \ldots M$ total models). The total likelihood ($\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K})$) of a given model $m$ is the data-based measure of support for that model $\mathcal{M}_m$ and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
+We use $y$ to represent a singular observation and $y_{ijk}$ is the observed number of rodents of species $i$ in plot $j$ at survey $k$. Because $y_{ijk}$ is a count of individuals, the variable is non-negative and integer-valued. The observed numbers of individuals across each species $i$ in $1 \ldots I$ and each plot $j$ in $1 \ldots J$ for a given survey $k$ is an $I \times J$ matrix $\textbf{Y}_k$. The series of observations for surveys $1 \ldots K$ is given by $\textbf{Y}_{1:K}$. A future observation (\emph{i.e.}, what is to be forecast) is denoted $\tilde{y}$, such that the number of species $i$ in plot $j$ that will exist at the next observation is $\tilde{y}_{ij(k+1)}$, the number of all species in all plots $n$ observations into the future is $\tilde{\textbf{Y}}_{k+n}$, and the series of $N$ future observations is $\tilde{\textbf{Y}}_{(k+1):(k+N)}$.
+
+The suite of $M$ competing models is compiled to forecast $\tilde{\textbf{Y}}_{(k+1):(k+N)}$ based on $\textbf{Y}_{1:K}$. Each model ($\mathcal{M}_m$) is defined by three functions that describe the evolution of the underlying state and the data collected on it. $f_{y_k|z_k}$ is a general observation function that translates the true underlying state ($\textbf{Z}_k$, number or density of each species in each plot, following the same structure and subscript notation as $\textbf{Y}_k$) into the number of each species actually observed in each plot ($\textbf{Y}_k$):
+
+\begin{equation}
+\textbf{Y}_k = f_{y_k|z_k}(\textbf{Z}_k, \textbf{X}_{(y|z), k}, \Theta_{(y|z), k})
+\end{equation}
+
+where $\textbf{X}_{(y|z), k}$ are detection-associated covariates and $\Theta_{(y|z), k}$ are detection-function parameters. The unobserved true state ($\textbf{Z}$) is a multi-dimensional, evolving, and non-negative variable that could be integer-valued (if the state is represented by the number of individuals) or continuous (if the state is represented by the density of individuals). In either case, we can consider a general process model $f_{z_k|z_{k-1}}$ that describes the evolution of $\textbf{Z}$ from one time point ($k-1$) to the next ($k$):
+
+\begin{equation}
+\textbf{Z}_{k} = f_{z_k|z_{k-1}}(\textbf{Z}_{k-1}, \Delta t_{(k-1):k}, \textbf{X}_{(z|z), k},\Theta_{(z|z), k})
+\end{equation}
+
+where $\Delta t_{(k-1):k}$ is the time step ($t_k - t_{k-1}$), $\textbf{X}_{(z|z), k}$ are process-associated covariates, and $\Theta_{(z|z), k}$ are process-function parameters. $f_{z_k|z_{k-1}}$ is general; it can be phenomenological or mechanistic, but it must generate appropriate values for $\textbf{Z}_{k}$. Given the evolutionary aspect of the model, we must define a starting point for $\textbf{Z}$: $\textbf{Z}_{k=0}$. To do so, we use the general initialization function $f_{\textbf{Z}_0}$, which only depends upon initialization-associated covariates $\textbf{X}_{z_0}$ and parameters $\Theta_{z_0}$:
+
+\begin{equation}
+\textbf{Z}_{k=0} = f_{z_0}(\textbf{X}_{z_0}, \Theta_{z_0})
+\end{equation}
+
+The total likelihood ($\mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K})$) of a given model $m$ is the data-based measure of support for that model $\mathcal{M}_m$ and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
 
 \begin{equation}
 \mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K}) = \prod_{k = 1}^{K}{\mathcal{L}(\mathcal{M}_m, \textbf{Y}_{1:k-1}|\textbf{Y}_{k})},
@@ -114,24 +134,6 @@ which is equal to the product of the probabilities of each observation, given th
 
 \begin{equation}
 \mathcal{L}(\mathcal{M}_m|\textbf{Y}_{1:K}) = \prod_{k = 1}^{K}{\mathbb{P}[\textbf{Y}_{k}|\mathcal{M}_m, \textbf{Y}_{1:k-1}]}
-\end{equation}
-
-Each model is defined by three functions that describe the evolution of the underlying state and the data collected on it. $y_{ijk}$ is a function of $z_{ijk}$, the true state (number or density) of $i$ in $j$ at $k$, and some species-specific detection-function parameters ${\theta_{y}}_i$:
-
-\begin{equation}
-y_{ijk} = f_y(z_{ijk}, {\theta_{y}}_i)
-\end{equation}
-
-$f_y$ is a general observation function that could take multiple forms, but must make predictions of $y_{ijk}$ as non-negative integers. The unobserved true state of species $i$ in $j$ at $k$ ($z_{ijk}$) is an evolving, non-negative variable that could be integer-valued (if the state is represented by the number of individuals) or continuous (if the state is represented by the density of individuals). In either case, we can considering a general process model $f_z$ that describes the evolution of $z_{ijk}$:
-
-\begin{equation}
-z_{ijk} = f_z({z_{ijk - \Delta t}}, \Delta t, {{\theta_z}}_i)
-\end{equation}
-
-where $\Delta t$ is the time step and ${\theta_{z}}_i$ are some species-specific process-function parameters. $f_z$ is general; it can be phenomenological or mechanistic, but it must generate appropriate values for $z_{ijk}$. Given the evolutionary aspect of the model, we must define a starting point for $z_{ijk}$. To do so, we use the general initialization function $f_{z_0}$, which only depends upon species-specific parameters ${\theta_{z_0}}_i$:
-
-\begin{equation}
-z_{ijk = 0} = f_{z_0}({\theta_{z_0}}_i)
 \end{equation}
 
 
