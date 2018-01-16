@@ -8,7 +8,6 @@
 \usepackage{graphicx}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
 \usepackage{authblk}
 \usepackage{hyperref}
 \usepackage{indentfirst}
@@ -24,6 +23,9 @@
 \usepackage{natbib}
 \bibliographystyle{abbrvnat}
 \setcitestyle{authoryear,open={(},close={)}}
+
+\usepackage{geometry}
+\geometry{legalpaper, portrait, margin=1in}
 
 \title{Portal Forecasting Models}
 
@@ -131,10 +133,10 @@ Thus, each model ($\mathcal{M}_m$, for $m$ in $1 \ldots M$) is defined by observ
 \subsection{Likelihood Estimation}
 \label{subsec:devmods_le}
 
-The total likelihood of a particular model ($\mathcal{M}_m$) given the specific set of data actually observed ($\textbf{Y}^{*}_{1:K}$) is written $\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K})$. This likelihood is the data-based, long-running measure of support for that model and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
+Likelihood forms the basis of model-based statistical inference \citep{Pawitan2001} and is a key component in our evaluation and use of our forecasts. The total likelihood of a particular model ($\mathcal{M}_m$) given the specific set of data actually observed ($\textbf{Y}^{*}_{1:K}$) is written $\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K})$. This likelihood is the data-based, long-running measure of support for that model and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
 
 \begin{equation}
-\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K}) = \prod_{k = 1}^{K}{\mathcal{L}(\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}|\textbf{Y}^{*}_{k})},
+\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K}) = \prod_{k = 1}^{K}{\mathcal{L}_k(\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}|\textbf{Y}^{*}_{k})},
 \end{equation}
 
 which is equal to the product of the probabilities of each observation, given the model and the history of observations to that point:
@@ -143,17 +145,35 @@ which is equal to the product of the probabilities of each observation, given th
 \mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K}) = \prod_{k = 1}^{K}{\mathbb{P}[\textbf{Y}^{*}_{k}|\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}]}
 \end{equation}
 
-According to Eq. 5, in order for us to determine the likelihood of the model, we must be able to calculate the probability of each observation ($\textbf{Y}^{*}_{k}$) given the history of previous observations ($\textbf{Y}^{*}_{1:k-1}$) and the model ($\mathcal{M}_m$). However, given our usage of a state-space model, $Y$ is conditionally independent, and so there is no direct relationship between $\textbf{Y}^{*}_{1:k-1}$ and $\textbf{Y}^{*}_{k}$. Rather, we rely on the indirect relationship between  observations $\textbf{Y}^{*}_{k-1}$ and $\textbf{Y}^{*}_{k}$ that occurs via the partially observed states at those times ($\textbf{X}_{k-1}$ and $\textbf{X}_{k}$). 
+According to Eq. 5, in order for us to determine the likelihood of the model, we must be able to calculate the probability of each observation ($\textbf{Y}^{*}_{k}$) given the history of previous observations ($\textbf{Y}^{*}_{1:(k-1)}$) and the model ($\mathcal{M}_m$). However, given our usage of a state-space model, $Y$ is conditionally independent, and so there is no direct relationship between $\textbf{Y}^{*}_{1:(k-1)}$ and $\textbf{Y}^{*}_{k}$. Rather, we rely on the indirect relationship between  observations $\textbf{Y}^{*}_{k-1}$ and $\textbf{Y}^{*}_{k}$ that occurs via the partially observed states at those times ($\textbf{Z}_{k-1}$ and $\textbf{Z}_{k}$). 
 
-For a given time point $k$, we use Bayes' theorem  to infer the state at $k-1$ ($\textbf{X}_{k-1}$) from the history of observations $\textbf{Y}^{*}_{1:(k-1)}$, then project the state forward to $k$ using the process evolution function, and finally transform the state $\textbf{X}_{k}$ to the observation at $k$, $\textbf{Y}^{*}_{k}$. We factorize the likelihood accordingly:
+For a given time point $k$, we use Bayes' theorem  to infer the state at $k-1$ ($\textbf{Z}_{k-1}$) from the history of observations $\textbf{Y}^{*}_{1:(k-1)}$, then project the state forward to $k$ using the process evolution function, and finally transform the state $\textbf{Z}_{k}$ to the observation at $k$, $\textbf{Y}^{*}_{k}$. We factorize the point-specific probability accordingly:
 
 \begin{equation}
-\mathbb{P}[\textbf{Y}^{*}_{k}|\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}] = \sum_{\textbf{X}_k}{\mathbb{P}[\textbf{Y}^*_k|\textbf{X}_k, \mathcal{M}_m]}\sum_{\textbf{X}_{k-1}}{\mathbb{P}[\textbf{X}_k|\textbf{X}_{k-1}, \mathcal{M}_m]\mathbb{P}[\textbf{X}_{k-1}|\textbf{Y}^*_{k-1}, \mathcal{M}_m]}
+\mathbb{P}[\textbf{Y}^{*}_{k}|\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}] = \sum_{\textbf{Z}_k}{\mathbb{P}[\textbf{Y}^*_k|\textbf{Z}_k, \mathcal{M}_m]}\sum_{\textbf{Z}_{k-1}}{\mathbb{P}[\textbf{Z}_k|\textbf{Z}_{k-1}, \mathcal{M}_m]\mathbb{P}[\textbf{Z}_{k-1}|\textbf{Y}^*_{1:(k-1)}, \mathcal{M}_m]}
 \end{equation}
 
+In order to retain generality regarding model structure, we leverage flexible, simulation-based approaches to estimate model likelihood, thereby allowing us to avoid evaluating probability densities directly \citep{Breto2009, He2010, Ionides2015}. Specifically, we rely on sequential Monte Carlo (SMC) methods, often referred to as \emph{particle filtration} to numerically estimate likelihoods \citep{Kitagawa1987, Doucet2001, Ionides2006}
 
+For notation, we refer to $\textbf{Z}_{k}|\textbf{Y}^*_{1:k}$ as the \emph{filtering distribution} (at $k$) and $\textbf{Z}_{k}|\textbf{Y}^*_{1:(k-1)}$ as the \emph{prediction distribution} (at $k$). To estimate the probability of a specific observation (\emph{i.e.}, the likelihood of the model given that observation), we first draw (following Bayes' theorem) a set of $Q$ particles from the filtering distribution at the last observation ($k-1$), which we write as $\textbf{Z}^{F}_{(k-1),q}$, $q = 1, \ldots, Q$ (the $F$ is a superscript to refer to filtering, not an exponent). We then use the process evolution function (Eq. 2) to simulate forward in time and generate the associated prediction distribution at $k$:
 
+\begin{equation}
+\textbf{Z}^{P}_{k,q} \sim f_{z_k|z_{k-1}}(\textbf{Z}^{F}_{(k-1),q}, \Delta t_{(k-1):k}, \textbf{Z}_{(z_k|z_{k-1}), k},\Theta_{(z_k|z_{k-1}), k}), \; q = 1, \ldots, Q
+\end{equation}
 
+We then resample the prediction distribution with weights according to the observation function (Eq. 1), which generates a distribution of $\textbf{Y}^{*}_{k}|\textbf{Z}_{k}$ given $\textbf{Y}^{*}_{1:(k-1)}$. Therefore, the conditional likelihood of the model given the observation at $k$ is
+
+\begin{equation}
+\mathcal{L}_k(\mathcal{M}_m, \textbf{Y}^{*}_{1:(k-1)} | \textbf{Y}^{*}_{k}) \approx \frac{1}{Q}\sum_{q=1}^{Q}{\mathbb{P}[\textbf{Y}^*_k|\textbf{Z}^{P}_{k, q}, \mathcal{M}_m]}, \; q = 1, \ldots, Q
+\end{equation}
+
+We iterate Eq. 8 through the data from $k = 1$ to $k = K$, at which point we have obtained the conditional likelihood of each observation. These values are then multiplied together to achieve the likelihood of the model given the entire set of observations:
+
+\begin{equation}
+\mathcal{L}(\mathcal{M}_m | \textbf{Y}^{*}_{1:K}) \approx \prod_{k = 1}^{K}{\frac{1}{Q}\sum_{q=1}^{Q}{\mathbb{P}[\textbf{Y}^*_k|\textbf{Z}^{P}_{k, q}, \mathcal{M}_m]}}, \; q = 1, \ldots, Q
+\end{equation}
+
+This equation forms the foundation of our statistical inference by describing how we generate an unbiased estimate of the likelihood for a model via simulation of the model and comparison to the observed data \citep{Doucet2001,King2016}
 
 \bibliography{refs}  
 \end{document}
