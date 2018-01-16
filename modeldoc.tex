@@ -117,16 +117,21 @@ The suite of $M$ competing models is compiled to forecast $\tilde{\textbf{Y}}_{(
 where $\textbf{X}_{(y|z), k}$ are detection-associated covariates and $\Theta_{(y|z), k}$ are detection-function parameters. The unobserved true state ($\textbf{Z}$) is a multi-dimensional, evolving, and non-negative variable that could be integer-valued (if the state is represented by the number of individuals) or continuous (if the state is represented by the density of individuals). In either case, we can consider a general process model $f_{z_k|z_{k-1}}$ that describes the evolution of $\textbf{Z}$ from one time point ($k-1$) to the next ($k$):
 
 \begin{equation}
-\textbf{Z}_{k} = f_{z_k|z_{k-1}}(\textbf{Z}_{k-1}, \Delta t_{(k-1):k}, \textbf{X}_{(z|z), k},\Theta_{(z|z), k})
+\textbf{Z}_{k} = f_{z_k|z_{k-1}}(\textbf{Z}_{k-1}, \Delta t_{(k-1):k}, \textbf{X}_{(z_k|z_{k-1}), k},\Theta_{(z_k|z_{k-1}), k})
 \end{equation}
 
-where $\Delta t_{(k-1):k}$ is the time step ($t_k - t_{k-1}$), $\textbf{X}_{(z|z), k}$ are process-associated covariates, and $\Theta_{(z|z), k}$ are process-function parameters. $f_{z_k|z_{k-1}}$ is general; it can be phenomenological or mechanistic, but it must generate appropriate values for $\textbf{Z}_{k}$. Given the evolutionary aspect of the model, we must define a starting point for $\textbf{Z}$: $\textbf{Z}_{k=0}$. To do so, we use the general initialization function $f_{\textbf{Z}_0}$, which only depends upon initialization-associated covariates $\textbf{X}_{z_0}$ and parameters $\Theta_{z_0}$:
+where $\Delta t_{(k-1):k}$ is the time step ($t_k - t_{k-1}$), $\textbf{X}_{(z_k|z_{k-1}), k}$ are process-associated covariates, and $\Theta_{(z_k|z_{k-1}), k}$ are process-function parameters. $f_{z_k|z_{k-1}}$ is general; it can be phenomenological or mechanistic, but it must generate appropriate values for $\textbf{Z}_{k}$. Given the evolutionary aspect of the model, we must define a starting point for $\textbf{Z}$: $\textbf{Z}_{k=0}$. To do so, we use the general initialization function $f_{\textbf{Z}_0}$, which only depends upon initialization-associated covariates $\textbf{X}_{z_0}$ and parameters $\Theta_{z_0}$:
 
 \begin{equation}
 \textbf{Z}_{k=0} = f_{z_0}(\textbf{X}_{z_0}, \Theta_{z_0})
 \end{equation}
 
-The total likelihood ($\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K})$) of a particular model ($\mathcal{M}_m$) given the specific set of data actually observed ($\textbf{Y}^{*}_{1:K}$) is the data-based, long-running measure of support for that model and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
+Thus, each model ($\mathcal{M}_m$, for $m$ in $1 \ldots M$) is defined by observation, process evolution, and initialization functions, notated as $f^m_{y_k|z_k}$, $f^m_{y_k|z_k}$, and $f^m_{\textbf{Z}_0}$, respectively (note: the $m$'s are superscripted index values, not exponents). 
+
+\subsection{Likelihood Estimation}
+\label{subsec:devmods_le}
+
+The total likelihood of a particular model ($\mathcal{M}_m$) given the specific set of data actually observed ($\textbf{Y}^{*}_{1:K}$) is written $\mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K})$. This likelihood is the data-based, long-running measure of support for that model and is the product of the conditional likelihoods of the model and all previous observations, given each observation:
 
 \begin{equation}
 \mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K}) = \prod_{k = 1}^{K}{\mathcal{L}(\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}|\textbf{Y}^{*}_{k})},
@@ -137,6 +142,17 @@ which is equal to the product of the probabilities of each observation, given th
 \begin{equation}
 \mathcal{L}(\mathcal{M}_m|\textbf{Y}^{*}_{1:K}) = \prod_{k = 1}^{K}{\mathbb{P}[\textbf{Y}^{*}_{k}|\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}]}
 \end{equation}
+
+According to Eq. 5, in order for us to determine the likelihood of the model, we must be able to calculate the probability of each observation ($\textbf{Y}^{*}_{k}$) given the history of previous observations ($\textbf{Y}^{*}_{1:k-1}$) and the model ($\mathcal{M}_m$). However, given our usage of a state-space model, $Y$ is conditionally independent, and so there is no direct relationship between $\textbf{Y}^{*}_{1:k-1}$ and $\textbf{Y}^{*}_{k}$. Rather, we rely on the indirect relationship between  observations $\textbf{Y}^{*}_{k-1}$ and $\textbf{Y}^{*}_{k}$ that occurs via the partially observed states at those times ($\textbf{X}_{k-1}$ and $\textbf{X}_{k}$). 
+
+For a given time point $k$, we use Bayes' theorem  to infer the state at $k-1$ ($\textbf{X}_{k-1}$) from the history of observations $\textbf{Y}^{*}_{1:(k-1)}$, then project the state forward to $k$ using the process evolution function, and finally transform the state $\textbf{X}_{k}$ to the observation at $k$, $\textbf{Y}^{*}_{k}$. We factorize the likelihood accordingly:
+
+\begin{equation}
+\mathbb{P}[\textbf{Y}^{*}_{k}|\mathcal{M}_m, \textbf{Y}^{*}_{1:k-1}] = \sum_{\textbf{X}_k}{\mathbb{P}[\textbf{Y}^*_k|\textbf{X}_k, \mathcal{M}_m]}\sum_{\textbf{X}_{k-1}}{\mathbb{P}[\textbf{X}_k|\textbf{X}_{k-1}, \mathcal{M}_m]\mathbb{P}[\textbf{X}_{k-1}|\textbf{Y}^*_{k-1}, \mathcal{M}_m]}
+\end{equation}
+
+
+
 
 
 \bibliography{refs}  
